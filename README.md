@@ -22,7 +22,22 @@ Veri-Train模型迭代闭环工作台 - 后端API服务
 
 ## 快速开始
 
-### 使用Docker Compose (推荐)
+### 前置要求
+
+确保已安装 [uv](https://docs.astral.sh/uv/) (推荐):
+
+```bash
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# 或使用 pip
+pip install uv
+```
+
+### 使用Docker Compose (推荐生产环境)
 
 ```bash
 # 1. 复制环境变量
@@ -45,34 +60,58 @@ docker-compose exec api python scripts/init_db.py
 - **API文档**: http://localhost:8000/api/v1/docs
 - **Flower监控**: http://localhost:5555
 
-### 本地开发
+### 本地开发 (使用 uv - 推荐)
 
 ```bash
-# 1. 创建虚拟环境
-python3.11 -m venv venv
-source venv/bin/activate
+# 1. 安装依赖 (uv会自动创建虚拟环境)
+uv sync
 
-# 2. 安装依赖
-pip install -r requirements.txt
-
-# 3. 启动PostgreSQL和Redis
+# 2. 启动PostgreSQL和Redis
 docker-compose up -d postgres redis
 
-# 4. 配置环境变量
+# 3. 配置环境变量
 cp .env.example .env
 # 编辑.env
 
-# 5. 初始化数据库
-python scripts/init_db.py
+# 4. 初始化数据库
+uv run python scripts/init_db.py
 
-# 6. 启动FastAPI
-uvicorn app.main:app --reload
+# 5. 启动FastAPI
+uv run uvicorn app.main:app --reload
 
-# 7. 启动Celery Worker (另开终端)
-celery -A app.tasks.celery_app worker --loglevel=info
+# 6. 启动Celery Worker (另开终端)
+uv run celery -A app.tasks.celery_app worker --loglevel=info
 
-# 8. (可选) 启动Flower监控
-celery -A app.tasks.celery_app flower
+# 7. (可选) 启动Flower监控
+uv run celery -A app.tasks.celery_app flower
+```
+
+### 依赖管理
+
+```bash
+# 安装所有依赖（包括生产依赖）
+uv sync
+
+# 安装开发依赖
+uv sync --extra dev
+
+# 安装测试依赖
+uv sync --extra test
+
+# 安装所有依赖（开发+测试）
+uv sync --all-extras
+
+# 添加新依赖
+uv add fastapi
+
+# 添加开发依赖
+uv add --dev pytest
+
+# 更新所有依赖
+uv sync --upgrade
+
+# 生成 requirements.txt (用于 Docker 等场景)
+uv pip compile pyproject.toml -o requirements.txt
 ```
 
 ## 项目结构
@@ -254,13 +293,13 @@ ALLOWED_ORIGINS=http://localhost:3000
 
 ```bash
 # 运行所有测试
-pytest
+uv run pytest
 
 # 运行特定测试
-pytest tests/api/test_models.py
+uv run pytest tests/api/test_models.py
 
 # 生成覆盖率报告
-pytest --cov=app --cov-report=html
+uv run pytest --cov=app --cov-report=html
 ```
 
 ## 监控
